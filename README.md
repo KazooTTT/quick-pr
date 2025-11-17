@@ -87,9 +87,9 @@ pnpm run lint
 
 <!-- Badges -->
 
-[npm-version-src]: https://img.shields.io/npm/v/quick-pr?style=flat&colorA=080f12&colorB=1fa669
-[npm-version-href]: https://npmjs.com/package/quick-pr
-[npm-downloads-src]: https://img.shields.io/npm/dm/quick-pr?style=flat&colorA=080f12&colorB=1fa669
-[npm-downloads-href]: https://npmjs.com/package/quick-pr
+[npm-version-src]: https://img.shields.io/npm/v/@kazoottt/quick-pr?style=flat&colorA=080f12&colorB=1fa669
+[npm-version-href]: https://npmjs.com/package/@kazoottt/quick-pr
+[npm-downloads-src]: https://img.shields.io/npm/dm/@kazoottt/quick-pr?style=flat&colorA=080f12&colorB=1fa669
+[npm-downloads-href]: https://npmjs.com/package/@kazoottt/quick-pr
 [license-src]: https://img.shields.io/github/license/kazoottt/quick-pr.svg?style=flat&colorA=080f12&colorB=1fa669
 [license-href]: https://github.com/kazoottt/quick-pr/blob/main/LICENSE
