@@ -1,4 +1,4 @@
-# quick-pr
+# @kazoottt/quick-pr
 
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
@@ -10,13 +10,13 @@ Create a Pull Request with interactive branch selection
 
 ```bash
 # Using npm
-npm install -g quick-pr
+npm install -g @kazoottt/quick-pr
 
 # Using pnpm
-pnpm add -g quick-pr
+pnpm add -g @kazoottt/quick-pr
 
 # Using yarn
-yarn global add quick-pr
+yarn global add @kazoottt/quick-pr
 ```
 
 ## Usage
@@ -25,6 +25,8 @@ Navigate to your git repository and run:
 
 ```bash
 quick-pr
+# or
+@kazoottt/quick-pr
 ```
 
 The CLI will interactively guide you through creating a pull request:
@@ -54,14 +56,6 @@ The CLI will interactively guide you through creating a pull request:
 ## License
 
 [MIT](./LICENSE) License © [KazooTTT](https://github.com/kazoottt)
-
-## Sponsors
-
-<p align="center">
-  <a href="https://github.com/sponsors/kazoottt">
-    <img src="https://github.com/sponsors/kazoottt" alt="GitHub Sponsors" />
-  </a>
-</p>
 
 ## Contributing
 

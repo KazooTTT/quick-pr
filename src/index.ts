@@ -135,7 +135,7 @@ async function handlePRCommand(): Promise<void> {
 }
 
 const _argv = yargs(hideBin(process.argv))
-  .scriptName('quick-pr')
+  .scriptName('@kazoottt/quick-pr')
   .usage('Usage: $0 [options]')
   .command(
     '$0',
