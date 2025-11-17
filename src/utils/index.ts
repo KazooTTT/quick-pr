@@ -12,3 +12,5 @@ export function extractPath(input: string): string {
 
   return result
 }
+
+export * from './version-check.js'

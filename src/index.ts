@@ -18,6 +18,7 @@ import {
   promptCreateMergeBranch,
   promptTargetBranch,
 } from './utils/pr-cli.js'
+import { checkAndNotifyUpdate } from './utils/version-check.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -25,6 +26,7 @@ const __dirname = dirname(__filename)
 const packageJsonPath = join(__dirname, '../package.json')
 const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'))
 const version = packageJson.version
+const packageName = packageJson.name
 
 function printPRBanner(): void {
   console.log(
@@ -132,6 +134,9 @@ async function handlePRCommand(): Promise<void> {
   }
 
   console.log(green('\n🎉  PR creation process completed!\n'))
+
+  // Check for updates after completing the main task
+  await checkAndNotifyUpdate(packageName, version)
 }
 
 const _argv = yargs(hideBin(process.argv))
