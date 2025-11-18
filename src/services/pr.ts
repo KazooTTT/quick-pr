@@ -20,7 +20,6 @@ export interface BranchInfo {
   name: string
   lastCommitTime: number
   lastCommitTimeFormatted: string
-  isProtected: boolean
   category: string
 }
 
@@ -143,14 +142,6 @@ export function getBranchCategory(branchName: string): string {
 }
 
 /**
- * 判断是否为受保护分支
- */
-export function isProtectedBranch(branchName: string): boolean {
-  const protectedBranches = ['main', 'master', 'develop', 'dev', 'pre_master', 'dev_master']
-  return protectedBranches.includes(branchName)
-}
-
-/**
  * 获取分支详细信息（包含时间和分类）
  */
 export function getBranchesWithInfo(branches: string[]): BranchInfo[] {
@@ -160,7 +151,6 @@ export function getBranchesWithInfo(branches: string[]): BranchInfo[] {
       name: branchName,
       lastCommitTime: timestamp,
       lastCommitTimeFormatted: formatted,
-      isProtected: isProtectedBranch(branchName),
       category: getBranchCategory(branchName),
     }
   })
