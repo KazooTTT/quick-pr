@@ -88,61 +88,36 @@ export async function promptBranchSelection(
   // 构建选项列表
   const choices: any[] = []
 
-  if (sortMode === 'category') {
-    // 按类别分组显示（仅用于单选模式）
-    // 添加固定分支
-    if (pinnedBranches.length > 0) {
-      choices.push(new inquirer.Separator(magenta('━━━━━━━━ 📌 Pinned Branches ━━━━━━━━')))
-      pinnedBranches.forEach((branch) => {
+  // 按类别分组显示（仅用于单选模式）
+  // 添加固定分支
+  if (pinnedBranches.length > 0) {
+    choices.push(new inquirer.Separator(magenta('━━━━━━━━ 📌 Pinned Branches ━━━━━━━━')))
+    pinnedBranches.forEach((branch) => {
+      choices.push({
+        name: `📌 ${branch.name.padEnd(45)} ${dim(`(${branch.lastCommitTimeFormatted})`)}`,
+        value: branch.name,
+        short: branch.name,
+      })
+    })
+    choices.push(new inquirer.Separator(' '))
+  }
+
+  // 添加分类分支
+  sortedCategories.forEach((category) => {
+    const branches = categorizedBranches.get(category)!
+    if (branches.length > 0) {
+      const categoryLabel = category === 'other' ? 'Other Branches' : `${category}/*`
+      choices.push(new inquirer.Separator(cyan(`━━━━━━━━ ${categoryLabel} ━━━━━━━━`)))
+      branches.forEach((branch) => {
         choices.push({
-          name: `📌 ${branch.name.padEnd(45)} ${dim(`(${branch.lastCommitTimeFormatted})`)}`,
+          name: `   ${branch.name.padEnd(45)} ${dim(`(${branch.lastCommitTimeFormatted})`)}`,
           value: branch.name,
           short: branch.name,
         })
       })
       choices.push(new inquirer.Separator(' '))
     }
-
-    // 添加分类分支
-    sortedCategories.forEach((category) => {
-      const branches = categorizedBranches.get(category)!
-      if (branches.length > 0) {
-        const categoryLabel = category === 'other' ? 'Other Branches' : `${category}/*`
-        choices.push(new inquirer.Separator(cyan(`━━━━━━━━ ${categoryLabel} ━━━━━━━━`)))
-        branches.forEach((branch) => {
-          choices.push({
-            name: `   ${branch.name.padEnd(45)} ${dim(`(${branch.lastCommitTimeFormatted})`)}`,
-            value: branch.name,
-            short: branch.name,
-          })
-        })
-        choices.push(new inquirer.Separator(' '))
-      }
-    })
-  }
-  else {
-    // 简单排序模式（用于多选）
-    const allBranches = [...pinnedBranches, ...regularBranches]
-
-    if (sortMode === 'name') {
-      // 按字母顺序排序
-      allBranches.sort((a, b) => a.name.localeCompare(b.name))
-    }
-    else if (sortMode === 'time') {
-      // 按时间排序（最新的在前）
-      allBranches.sort((a, b) => b.lastCommitTime - a.lastCommitTime)
-    }
-
-    allBranches.forEach((branch) => {
-      const isPinned = pinnedBranchNames.includes(branch.name)
-      const prefix = isPinned ? '📌 ' : '   '
-      choices.push({
-        name: `${prefix}${branch.name.padEnd(45)} ${dim(`(${branch.lastCommitTimeFormatted})`)}`,
-        value: branch.name,
-        short: branch.name,
-      })
-    })
-  }
+  })
 
   // Filter function for autocomplete search
   const searchBranches = async (_answers: any, input = ''): Promise<any[]> => {
