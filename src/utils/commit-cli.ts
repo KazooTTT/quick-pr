@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process'
 import inquirer from 'inquirer'
+import inquirerAutoComplete from 'inquirer-autocomplete-prompt'
 import { cyan, dim, green, red, yellow } from 'kolorist'
 import {
   displayBranchName,
@@ -14,25 +15,47 @@ import {
 import { copyToClipboard } from '../services/pr.js'
 import { getGeminiApiKey, getGeminiModel, setGeminiApiKey, setGeminiModel } from './config.js'
 
+// Register the autocomplete prompt
+inquirer.registerPrompt('autocomplete', inquirerAutoComplete)
+
 /**
  * 提示用户输入 API Key
  */
-export async function promptApiKey(): Promise<string> {
-  const { apiKey } = await inquirer.prompt([
-    {
-      type: 'password',
-      name: 'apiKey',
-      message: 'Please enter your Gemini API Key:',
-      validate: (input: string) => {
-        if (!input || input.trim().length === 0) {
-          return 'API Key cannot be empty'
-        }
-        return true
+export async function promptApiKey(): Promise<string | null> {
+  while (true) {
+    const { action } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'action',
+        message: 'Please enter your Gemini API Key:',
+        choices: [
+          { name: '✏️  Enter API Key', value: 'enter' },
+          new inquirer.Separator(),
+          { name: '↩️  Go back', value: 'back' },
+        ],
       },
-    },
-  ])
+    ])
 
-  return apiKey.trim()
+    if (action === 'back') {
+      return null
+    }
+
+    const { apiKey } = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'apiKey',
+        message: 'API Key:',
+        mask: '*',
+      },
+    ])
+
+    if (!apiKey || apiKey.trim().length === 0) {
+      console.log(yellow('⚠️  Please enter a valid API Key, or go back'))
+      continue
+    }
+
+    return apiKey.trim()
+  }
 }
 
 /**
@@ -70,7 +93,7 @@ export async function promptCommit(): Promise<boolean> {
 /**
  * 询问用户选择模型
  */
-export async function promptModelSelection(apiKey?: string): Promise<string> {
+export async function promptModelSelection(apiKey?: string): Promise<string | null> {
   let availableModels: string[] = getCommonModels()
   const currentModel = getGeminiModel()
 
@@ -92,35 +115,53 @@ export async function promptModelSelection(apiKey?: string): Promise<string> {
 
   const { modelChoice } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'autocomplete',
       name: 'modelChoice',
-      message: 'Select a Gemini model:',
+      message: 'Select a Gemini model (use arrow keys to navigate, type to search):',
       default: currentModel,
-      choices: [
-        ...availableModels.map(model => ({
-          name: model === currentModel ? `${model} (current)` : model,
-          value: model,
-        })),
-        { name: '✏️  Enter custom model name', value: 'custom' },
-      ],
+      pageSize: 10,
+      source: (answersSoFar: any, input: string) => {
+        const choices = [
+          ...availableModels.map(model => ({
+            name: model === currentModel ? `${model} (current)` : model,
+            value: model,
+          })),
+          { name: '✏️  Enter custom model name', value: 'custom' },
+          { name: '↩️  Go back', value: 'back' },
+        ]
+
+        if (!input) {
+          return Promise.resolve(choices)
+        }
+
+        const filtered = choices.filter(choice =>
+          choice.name.toLowerCase().includes(input.toLowerCase())
+          || choice.value.toString().toLowerCase().includes(input.toLowerCase()),
+        )
+
+        return Promise.resolve(filtered)
+      },
     },
   ])
+
+  if (modelChoice === 'back') {
+    return null
+  }
 
   if (modelChoice === 'custom') {
     const { customModel } = await inquirer.prompt([
       {
         type: 'input',
         name: 'customModel',
-        message: 'Enter model name:',
-        default: currentModel,
-        validate: (input: string) => {
-          if (!input || input.trim().length === 0) {
-            return 'Model name cannot be empty'
-          }
-          return true
-        },
+        message: 'Enter model name (leave empty to go back):',
+        default: '',
       },
     ])
+
+    if (!customModel || customModel.trim().length === 0) {
+      return null
+    }
+
     return customModel.trim()
   }
 
@@ -174,7 +215,14 @@ export async function handleCommitCommand(): Promise<void> {
     console.log(yellow('ℹ️  Gemini API Key not found.\n'))
     console.log(dim('You can get your API Key from: https://aistudio.google.com/apikey\n'))
 
-    apiKey = await promptApiKey()
+    const newApiKey = await promptApiKey()
+
+    if (!newApiKey) {
+      console.log(yellow('\n⚠️  Cancelled\n'))
+      return
+    }
+
+    apiKey = newApiKey
 
     const shouldSave = await promptSaveApiKey()
     if (shouldSave) {
@@ -252,13 +300,19 @@ export async function handleCommitCommand(): Promise<void> {
  * 配置 API Key
  */
 export async function handleConfigCommand(): Promise<void> {
-  console.log(cyan('\n╔══════════════════════════════════════════════════════════════╗'))
-  console.log(cyan('║                    ⚙️   Configuration                         ║'))
+  console.log(cyan('\n══════════════════════════════════════════════════════════════╗'))
+  console.log(cyan('║                     ⚙️   Configuration                        ║'))
   console.log(cyan('╚══════════════════════════════════════════════════════════════╝\n'))
 
   console.log(dim('Get your API Key from: https://aistudio.google.com/apikey\n'))
 
   const apiKey = await promptApiKey()
+
+  if (!apiKey) {
+    console.log(yellow('\n⚠️  Cancelled\n'))
+    return
+  }
+
   setGeminiApiKey(apiKey)
 
   console.log(green('\n✅  API Key configured successfully!\n'))
@@ -269,7 +323,7 @@ export async function handleConfigCommand(): Promise<void> {
  */
 export async function handleConfigModelCommand(): Promise<void> {
   console.log(cyan('\n╔══════════════════════════════════════════════════════════════╗'))
-  console.log(cyan('║                  🤖  Model Configuration                      ║'))
+  console.log(cyan('║                   🤖  Model Configuration                    ║'))
   console.log(cyan('╚══════════════════════════════════════════════════════════════╝\n'))
 
   const currentModel = getGeminiModel()
@@ -283,6 +337,12 @@ export async function handleConfigModelCommand(): Promise<void> {
   }
 
   const model = await promptModelSelection(apiKey)
+
+  if (!model) {
+    console.log(yellow('\n⚠️  Cancelled\n'))
+    return
+  }
+
   setGeminiModel(model)
 
   console.log(green(`\n✅  Model configured successfully: ${model}\n`))
@@ -365,7 +425,7 @@ export async function promptCreateBranch(branchName: string): Promise<boolean> {
  */
 export async function handleBranchCommand(): Promise<void> {
   console.log(cyan('\n╔══════════════════════════════════════════════════════════════╗'))
-  console.log(cyan('║              🌿  AI Branch Name Generator                     ║'))
+  console.log(cyan('║              🌿  AI Branch Name Generator                    ║'))
   console.log(cyan('╚══════════════════════════════════════════════════════════════╝\n'))
 
   // 获取配置的模型并显示
@@ -385,7 +445,14 @@ export async function handleBranchCommand(): Promise<void> {
     console.log(yellow('ℹ️  Gemini API Key not found.\n'))
     console.log(dim('You can get your API Key from: https://aistudio.google.com/apikey\n'))
 
-    apiKey = await promptApiKey()
+    const newApiKey = await promptApiKey()
+
+    if (!newApiKey) {
+      console.log(yellow('\n⚠️  Cancelled\n'))
+      return
+    }
+
+    apiKey = newApiKey
 
     const shouldSave = await promptSaveApiKey()
     if (shouldSave) {

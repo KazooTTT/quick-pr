@@ -5,6 +5,7 @@ import { join } from 'node:path'
 export interface Config {
   geminiApiKey?: string
   geminiModel?: string
+  pinnedBranches?: string[]
 }
 
 const CONFIG_DIR = join(homedir(), '.quick-pr')
@@ -78,4 +79,49 @@ export function setGeminiModel(model: string): void {
   const config = readConfig()
   config.geminiModel = model
   writeConfig(config)
+}
+
+/**
+ * 获取已固定的分支列表
+ */
+export function getPinnedBranches(): string[] {
+  const config = readConfig()
+  return config.pinnedBranches || []
+}
+
+/**
+ * 添加固定分支
+ */
+export function addPinnedBranch(branch: string): void {
+  const config = readConfig()
+  const pinnedBranches = config.pinnedBranches || []
+
+  if (!pinnedBranches.includes(branch)) {
+    pinnedBranches.push(branch)
+    config.pinnedBranches = pinnedBranches
+    writeConfig(config)
+  }
+}
+
+/**
+ * 移除固定分支
+ */
+export function removePinnedBranch(branch: string): void {
+  const config = readConfig()
+  const pinnedBranches = config.pinnedBranches || []
+
+  const index = pinnedBranches.indexOf(branch)
+  if (index > -1) {
+    pinnedBranches.splice(index, 1)
+    config.pinnedBranches = pinnedBranches
+    writeConfig(config)
+  }
+}
+
+/**
+ * 检查分支是否已固定
+ */
+export function isBranchPinned(branch: string): boolean {
+  const pinnedBranches = getPinnedBranches()
+  return pinnedBranches.includes(branch)
 }

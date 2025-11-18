@@ -14,6 +14,7 @@ import {
   getGitInfo,
 } from './services/pr.js'
 import { handleBranchCommand, handleCommitCommand, handleConfigCommand, handleConfigModelCommand, isBranchPushed, pushBranchToRemote } from './utils/commit-cli.js'
+import { handleListPinnedCommand, handlePinCommand, handleUnpinCommand } from './utils/pin-cli.js'
 import {
   displayPRInfo,
   promptCreateMergeBranch,
@@ -28,6 +29,44 @@ const packageJsonPath = join(__dirname, '../package.json')
 const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'))
 const version = packageJson.version
 const packageName = packageJson.name
+
+/**
+ * Show pinned branches management menu
+ */
+async function showPinnedBranchesMenu(): Promise<void> {
+  const inquirer = (await import('inquirer')).default
+
+  while (true) {
+    // 直接显示已固定的分支列表
+    await handleListPinnedCommand()
+
+    // 然后询问用户想做什么
+    const { action } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'action',
+        message: 'What would you like to do?',
+        choices: [
+          { name: '1. 📌  Pin more branches', value: 'pin', key: '1' },
+          { name: '2. 📍  Unpin branches', value: 'unpin', key: '2' },
+          new inquirer.Separator(),
+          { name: '↩️   Back to main menu', value: 'back' },
+        ],
+      },
+    ])
+
+    switch (action) {
+      case 'pin':
+        await handlePinCommand()
+        break
+      case 'unpin':
+        await handleUnpinCommand()
+        break
+      case 'back':
+        return
+    }
+  }
+}
 
 /**
  * Show main menu for feature selection
@@ -83,11 +122,12 @@ async function showMainMenu(): Promise<void> {
       name: 'feature',
       message: 'What would you like to do?',
       choices: [
-        { name: '🔧  Create Pull Request', value: 'pr' },
-        { name: '🤖  Generate Commit Message', value: 'commit' },
-        { name: '🌿  Generate Branch Name', value: 'branch' },
-        { name: '⚙️   Configure API Key', value: 'config' },
-        { name: '🔧  Configure Model', value: 'config:model' },
+        { name: '1. 🔧  Create Pull Request', value: 'pr', key: '1' },
+        { name: '2. 🤖  Generate Commit Message', value: 'commit', key: '2' },
+        { name: '3. 🌿  Generate Branch Name', value: 'branch', key: '3' },
+        { name: '4. ⚙️   Configure API Key', value: 'config', key: '4' },
+        { name: '5. 🔧  Configure Model', value: 'config:model', key: '5' },
+        { name: '6. 📌  Manage Pinned Branches', value: 'pinned', key: '6' },
         new inquirer.Separator(),
         { name: '❌  Exit', value: 'exit' },
       ],
@@ -120,6 +160,10 @@ async function showMainMenu(): Promise<void> {
       await checkAndNotifyUpdate(packageName, version)
       await showMainMenu() // 回到首页
       break
+    case 'pinned':
+      await showPinnedBranchesMenu()
+      await showMainMenu() // 回到首页
+      break
     case 'exit':
       console.log(dim('\n👋  Goodbye!\n'))
       process.exit(0)
@@ -134,7 +178,7 @@ function printPRBanner(): void {
   )
   console.log(
     bold(
-      cyan('║                    🔧  Quick PR Creator                       ║'),
+      cyan('║                    🔧  Quick PR Creator                      ║'),
     ),
   )
   console.log(
@@ -323,6 +367,43 @@ const _argv = yargs(hideBin(process.argv))
     () => {},
     async () => {
       await handleConfigModelCommand()
+      await checkAndNotifyUpdate(packageName, version)
+    },
+  )
+  .command(
+    'pin [branch]',
+    '📌  Pin a branch for quick access',
+    (yargs) => {
+      return yargs.positional('branch', {
+        describe: 'Branch name to pin',
+        type: 'string',
+      })
+    },
+    async (argv) => {
+      await handlePinCommand(argv.branch)
+      await checkAndNotifyUpdate(packageName, version)
+    },
+  )
+  .command(
+    'unpin [branch]',
+    '📍  Unpin a branch',
+    (yargs) => {
+      return yargs.positional('branch', {
+        describe: 'Branch name to unpin',
+        type: 'string',
+      })
+    },
+    async (argv) => {
+      await handleUnpinCommand(argv.branch)
+      await checkAndNotifyUpdate(packageName, version)
+    },
+  )
+  .command(
+    'pinned',
+    '📋  List all pinned branches',
+    () => {},
+    async () => {
+      await handleListPinnedCommand()
       await checkAndNotifyUpdate(packageName, version)
     },
   )
