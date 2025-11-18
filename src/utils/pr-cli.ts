@@ -88,7 +88,8 @@ export async function promptBranchSelection(
   // 构建选项列表
   const choices: any[] = []
 
-  if (sortMode === 'category') {
+  // 单选模式使用类别分组，多选模式使用字母排序
+  if (mode === 'single') {
     // 按类别分组显示（仅用于单选模式）
     // 添加固定分支
     if (pinnedBranches.length > 0) {
@@ -121,17 +122,9 @@ export async function promptBranchSelection(
     })
   }
   else {
-    // 简单排序模式（用于多选）
+    // 多选模式：按字母顺序排序所有分支
     const allBranches = [...pinnedBranches, ...regularBranches]
-
-    if (sortMode === 'name') {
-      // 按字母顺序排序
-      allBranches.sort((a, b) => a.name.localeCompare(b.name))
-    }
-    else if (sortMode === 'time') {
-      // 按时间排序（最新的在前）
-      allBranches.sort((a, b) => b.lastCommitTime - a.lastCommitTime)
-    }
+    allBranches.sort((a, b) => a.name.localeCompare(b.name))
 
     allBranches.forEach((branch) => {
       const isPinned = pinnedBranchNames.includes(branch.name)
@@ -157,7 +150,6 @@ export async function promptBranchSelection(
   }
 
   if (mode === 'single') {
-    // 单选模式总是使用 category 排序
     const { selectedBranch } = await inquirer.prompt([
       {
         type: 'autocomplete',
@@ -173,26 +165,12 @@ export async function promptBranchSelection(
     return selectedBranch
   }
   else {
-    // 按字母顺序排序所有分支
-    const allBranches = [...pinnedBranches, ...regularBranches]
-    allBranches.sort((a, b) => a.name.localeCompare(b.name))
-
-    const simpleChoices = allBranches.map((branch) => {
-      const isPinned = pinnedBranchNames.includes(branch.name)
-      const prefix = isPinned ? '📌 ' : '   '
-      return {
-        name: `${prefix}${branch.name.padEnd(45)} ${dim(`(${branch.lastCommitTimeFormatted})`)}`,
-        value: branch.name,
-        short: branch.name,
-      }
-    })
-
     const { selectedBranches } = await inquirer.prompt([
       {
         type: 'search-checkbox',
         name: 'selectedBranches',
         message,
-        choices: simpleChoices,
+        choices,
       },
     ])
 
