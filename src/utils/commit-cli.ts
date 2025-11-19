@@ -91,6 +91,22 @@ export async function promptCommit(): Promise<boolean> {
 }
 
 /**
+ * 询问是否 push
+ */
+export async function promptPush(): Promise<boolean> {
+  const { shouldPush } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'shouldPush',
+      message: 'Push the changes to the remote repository?',
+      default: true,
+    },
+  ])
+
+  return shouldPush
+}
+
+/**
  * 询问用户选择模型
  */
 export async function promptModelSelection(apiKey?: string): Promise<string | null> {
@@ -263,6 +279,16 @@ export async function handleCommitCommand(): Promise<void> {
         const success = performCommit(commitMessage)
         if (success) {
           console.log(green('\n✅  Commit successful!\n'))
+          const shouldPush = await promptPush()
+          if (shouldPush) {
+            const branchName = execSync('git branch --show-current').toString().trim()
+            if (branchName) {
+              pushBranchToRemote(branchName)
+            }
+            else {
+              console.log(red('❌  Could not determine the current branch name.'))
+            }
+          }
         }
         else {
           console.log(red('\n❌  Commit failed\n'))
