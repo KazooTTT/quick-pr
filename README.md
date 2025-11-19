@@ -9,7 +9,8 @@ Create a Pull Request with interactive branch selection
 
 quick create pr with interactive branch selection
 
-![](docs/images/demo.gif)
+![demo](https://github.com/user-attachments/assets/ec06d376-d7dd-4470-ae61-a7e66605f7b8)
+
 
 ## Installation
 
