@@ -20,9 +20,10 @@ export async function promptBranchSelection(
     message: string
     mode: 'single' | 'multiple'
     filterPinned?: boolean
+    defaultSelected?: string[]
   },
 ): Promise<string | string[]> {
-  const { title, message, mode, filterPinned = false } = options
+  const { title, message, mode, filterPinned = false, defaultSelected = [] } = options
 
   console.log(cyan(`\n${title}`))
   console.log(dim(''))
@@ -72,6 +73,7 @@ export async function promptBranchSelection(
         name: `📌 ${branch.name.padEnd(45)} ${dim(`(${branch.lastCommitTimeFormatted})`)}`,
         value: branch.name,
         short: branch.name,
+        checked: defaultSelected.includes(branch.name),
       })
     })
     choices.push(new inquirer.Separator(' '))
@@ -85,6 +87,7 @@ export async function promptBranchSelection(
         name: `   ${branch.name.padEnd(45)} ${dim(`(${branch.lastCommitTimeFormatted})`)}`,
         value: branch.name,
         short: branch.name,
+        checked: defaultSelected.includes(branch.name),
       })
     })
     choices.push(new inquirer.Separator(' '))
@@ -124,7 +127,7 @@ export async function promptBranchSelection(
         type: 'search-checkbox',
         name: 'selectedBranches',
         message,
-        choices,
+        choices: choices.filter((c: any) => c.value),
       },
     ])
 

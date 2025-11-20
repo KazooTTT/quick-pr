@@ -20,7 +20,7 @@ export async function handlePinCommand(branchName?: string): Promise<void> {
     console.log(green(`✅  Branch '${branchName}' has been pinned`))
   }
   else {
-    // 没有提供分支名，从分支列表中多选
+    // 没有提供分支名，显示所有分支，已固定的分支默认选中
     const { getAllBranches } = await import('../services/pr.js')
     const branches = getAllBranches()
 
@@ -30,30 +30,39 @@ export async function handlePinCommand(branchName?: string): Promise<void> {
     }
 
     const pinnedBranches = getPinnedBranches()
-    const availableBranches = branches.filter(b => !pinnedBranches.includes(b))
 
-    if (availableBranches.length === 0) {
-      console.log(yellow('⚠️  All branches are already pinned'))
-      return
-    }
-
-    const selectedBranches = await promptBranchSelection(availableBranches, {
-      title: '📌  Pin Branches',
-      message: 'Select branches to pin (type to search, Space to select, Enter to confirm):',
+    const selectedBranches = await promptBranchSelection(branches, {
+      title: '📌  Manage Pinned Branches',
+      message: 'Select branches to pin (type to search, Space to toggle, Enter to confirm):',
       mode: 'multiple',
-      filterPinned: true,
+      defaultSelected: pinnedBranches,
     }) as string[]
 
-    if (selectedBranches.length === 0) {
-      console.log(yellow('⚠️  No branches selected'))
-      return
-    }
+    // 计算需要添加和移除的分支
+    const toAdd = selectedBranches.filter(b => !pinnedBranches.includes(b))
+    const toRemove = pinnedBranches.filter(b => !selectedBranches.includes(b))
 
-    // 批量添加到固定列表
-    selectedBranches.forEach((branch: string) => {
+    // 批量添加新固定的分支
+    toAdd.forEach((branch: string) => {
       addPinnedBranch(branch)
     })
-    console.log(green(`✅  Pinned ${selectedBranches.length} branch(es)`))
+
+    // 批量移除取消固定的分支
+    toRemove.forEach((branch: string) => {
+      removePinnedBranch(branch)
+    })
+
+    if (toAdd.length > 0 || toRemove.length > 0) {
+      if (toAdd.length > 0) {
+        console.log(green(`✅  Pinned ${toAdd.length} branch(es)`))
+      }
+      if (toRemove.length > 0) {
+        console.log(green(`✅  Unpinned ${toRemove.length} branch(es)`))
+      }
+    }
+    else {
+      console.log(dim('No changes made'))
+    }
   }
 
   // 显示当前所有固定的分支
